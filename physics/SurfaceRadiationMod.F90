@@ -399,7 +399,7 @@ contains
     associate( tlai_z  => surfalb_inst%tlai_z_patch, &    ! Input: [real(r8) (:)   ] tlai increment for canopy layer
           fsun_z      => surfalb_inst%fsun_z_patch, &     ! Input: [real(r8) (:)   ]sunlit fraction of canopy layer
           elai        => canopystate_inst%elai_patch, &   ! Input: [real(r8) (:)   ]one-sided leaf area index
-          lai                 =>   lun%lai                          , & ! Input:  [real(r8) (:)   ]  LAI of road three            
+          tree_lai_urb                 =>   lun%tree_lai_urb                          , & ! Input:  [real(r8) (:)   ]  LAI of road three            
           sabs_tree_dif      =>    solarabs_inst%sabs_tree_dif_lun      , & ! Input: [real(r8) (:,:) ]  diffuse solar absorbed  by above-roof treeetation per unit treeetation area per unit incident flux
           sabs_tree_dir      =>    solarabs_inst%sabs_tree_dir_lun      , & ! Input: [real(r8) (:,:) ]  direct  solar absorbed  by above-roof treeetation per unit treeetation area per unit incident flux
 
@@ -446,7 +446,7 @@ contains
         end do
         if (elai(p) > 0._r8) then
            if (col%itype(c) == icol_road_tree) then 
-             fsun(p) = laisun(p) / lai(l)
+             fsun(p) = laisun(p) / tree_lai_urb(l)
            else 
              fsun(p) = laisun(p) / elai(p)
            end if 

@@ -314,7 +314,7 @@ contains
          ht_can_eff             =>   lun%ht_can_eff                               , & ! Input:  [real(r8) (:)   ]  weight of roof with respect to landunit           
          wtroad_perv         =>   lun%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
          wtroad_tree         =>   lun%wtroad_tree                          , & ! Input:  [real(r8) (:)   ]  weight of road tree wrt total road   
-         lai                 =>   lun%lai                          , & ! Input:  [real(r8) (:)   ]  LAI of road three            
+         tree_lai_urb                 =>   lun%tree_lai_urb                          , & ! Input:  [real(r8) (:)   ]  LAI of road three            
          forc_t              =>   atm2lnd_inst%forc_t_not_downscaled_grc    , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)                       
          forc_th             =>   atm2lnd_inst%forc_th_not_downscaled_grc   , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)             
          forc_rho            =>   atm2lnd_inst%forc_rho_not_downscaled_grc  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
@@ -487,7 +487,7 @@ contains
         ! calculate dayl_factor as the ratio of (current:max dayl)^2
         ! set a minimum of 0.01 (1%) for the dayl_factor
         dayl_factor(p)=min(1._r8,max(0.01_r8,(dayl(g)*dayl(g))/(max_dayl(g)*max_dayl(g))))
-        lai_p(p)=lai(l)
+        lai_p(p)=tree_lai_urb(l)
       end do
       
       ! these constants are required to calculate leaf boundary resistance
@@ -752,7 +752,7 @@ contains
          ! Question: The required input photosyns_inst%alphapsnsun_patch is only computed in subroutine Fractionation of PhotosynthesisMod.F90
          !          but the Fractionation is called after Photosynthesis call...?
 
-         ! The required input canopystate_inst%tlai_patch will be replaced by lun%lai for urban tree column 
+         ! The required input canopystate_inst%tlai_patch will be replaced by lun%tree_lai_urb for urban tree column 
          ! The required input light_inhibit, leafresp_method, medlynintercept, stomatalcond_mtd, leaf_mr_vcm are either pft dependent (use index=5) or constant
          !
          ! The required input ozone_inst%o3coefvsun_patch, o3coefvsha_patch are computed by 
@@ -780,7 +780,9 @@ contains
                   atm2lnd_inst, canopystate_inst, solarabs_inst, surfalb_inst, photosyns_inst, &
                   phase='sun')
           endif
-                        
+
+         ! leafn is only used in BGC mode, in SP mode, it is set to NAN and should not affect the calculation
+         ! in SP mode, lnc_opt is false
          call Photosynthesis (bounds, num_urbantreep, filter_urbantreep, &
              svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
              dayl_factor(begp:endp), leafn_road_tree(begp:endp), &
@@ -833,7 +835,7 @@ contains
             ! road width
             W_road=ht_roof(l)/canyon_hwr(l)
             ! effective tree area width
-            W_tree=lai(l)*ht_roof(l)/canyon_hwr(l)
+            W_tree=tree_lai_urb(l)*ht_roof(l)/canyon_hwr(l)
             W_tot=W_roof+W_road+W_tree
             
 
@@ -880,7 +882,7 @@ contains
                
             else if (ctype(c) == icol_road_tree) then
                ! scaled sensible heat conductance
-               wtus(c) = (W_tree/W_tot)*rbl(l)/(lai(l))
+               wtus(c) = (W_tree/W_tot)*rbl(l)/(tree_lai_urb(l))
                wtus_road_tree(l) = wtus(c)
                ! unscaled sensible heat conductance
                wtus_road_tree_unscl(l) = 1._r8/canyon_resistance(l)

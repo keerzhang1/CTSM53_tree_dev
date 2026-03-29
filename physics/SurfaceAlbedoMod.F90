@@ -340,7 +340,7 @@ contains
     !-----------------------------------------------------------------------
 
    associate(&
-          lai                 =>   lun%lai                          , & ! Input:  [real(r8) (:)   ]  LAI of road three            
+          tree_lai_urb                 =>   lun%tree_lai_urb                          , & ! Input:  [real(r8) (:)   ]  LAI of road three            
 
           rhol          =>    pftcon%rhol                         , & ! Input:  leaf reflectance: 1=vis, 2=nir        
           rhos          =>    pftcon%rhos                         , & ! Input:  stem reflectance: 1=vis, 2=nir        
@@ -914,7 +914,7 @@ contains
        p = filter_urbantreep(fp)
        l = patch%landunit(p)
        nrad(p) = 1
-       tlai_z(p,1) = lai(l)
+       tlai_z(p,1) = tree_lai_urb(l)
        tsai_z(p,1) = 0.0_r8
     end do
            
@@ -1378,7 +1378,7 @@ contains
 
          elai         =>    canopystate_inst%elai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
          esai         =>    canopystate_inst%esai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow
-         lai                 =>   lun%lai                          , & ! Input:  [real(r8) (:)   ]  LAI of road three            
+         tree_lai_urb                 =>   lun%tree_lai_urb                          , & ! Input:  [real(r8) (:)   ]  LAI of road three            
 
          tlai_z       =>    surfalb_inst%tlai_z_patch           , & ! Input:  [real(r8) (:,:) ]  tlai increment for canopy layer       
          tsai_z       =>    surfalb_inst%tsai_z_patch           , & ! Input:  [real(r8) (:,:) ]  tsai increment for canopy layer       
@@ -1434,8 +1434,8 @@ contains
           temp_t(p)=t_grnd(c)
           temp_fcansno(p)=0.0_r8
           temp_fwet(p)=0.0_r8
-          temp_elaiesai(p)=lai(l)
-          temp_elai(p)=lai(l)
+          temp_elaiesai(p)=tree_lai_urb(l)
+          temp_elai(p)=tree_lai_urb(l)
           temp_albgrd(c,:)=1.0_r8
           temp_albgri(c,:)=1.0_r8
       else 

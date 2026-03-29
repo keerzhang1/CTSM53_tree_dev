@@ -138,14 +138,6 @@ contains
 
     real(r8) :: forc_solad             (bounds%begl:bounds%endl, numrad)         ! forced solar
     ! For now, the albedo of tree is hard coded; I need to read them from surface data 
-    real(r8) :: alb_br_tree_dir     (bounds%begl:bounds%endl, numrad) ! direct br tree albedo 
-    real(r8) :: alb_ar_tree_dir     (bounds%begl:bounds%endl, numrad) ! direct br tree albedo 
-    real(r8) :: alb_br_tree_dif     (bounds%begl:bounds%endl, numrad) ! diffuse br tree albedo  
-    real(r8) :: alb_ar_tree_dif     (bounds%begl:bounds%endl, numrad) ! diffuse br tree albedo
-    real(r8) :: tran_br_tree_dir    (bounds%begl:bounds%endl, numrad) ! diffuse below-roof leaf transmittance 
-    real(r8) :: tran_ar_tree_dir    (bounds%begl:bounds%endl, numrad) ! diffuse above-roof leaf transmittance 
-    real(r8) :: tran_br_tree_dif    (bounds%begl:bounds%endl, numrad) ! diffuse below-roof leaf transmittance 
-    real(r8) :: tran_ar_tree_dif    (bounds%begl:bounds%endl, numrad) ! diffuse above-roof leaf transmittance
     real(r8) :: alb_br_tree_dir_eff     (bounds%begl:bounds%endl, numrad) ! effective direct br tree albedo 
     real(r8) :: alb_ar_tree_dir_eff     (bounds%begl:bounds%endl, numrad) ! effective direct br tree albedo 
     real(r8) :: alb_br_tree_dif_eff     (bounds%begl:bounds%endl, numrad) ! effective diffuse br tree albedo  
@@ -165,7 +157,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                        &
-         lai                 =>   lun%lai                          , & ! Input:  [real(r8) (:)   ]  LAI of road three            
+         tree_lai_urb                 =>   lun%tree_lai_urb                          , & ! Input:  [real(r8) (:)   ]  LAI of road three            
          vcmaxcintsun  =>    surfalb_inst%vcmaxcintsun_patch     , & ! Output:  [real(r8) (:)   ]  leaf to canopy scaling coefficient, sunlit leaf vcmax
          vcmaxcintsha  =>    surfalb_inst%vcmaxcintsha_patch     , & ! Output:  [real(r8) (:)   ]  leaf to canopy scaling coefficient, shaded leaf vcmax
          
@@ -180,10 +172,10 @@ contains
          wtroad_tree        => lun%wtroad_tree                      , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road    
 
          frac_sno           => waterdiagnosticbulk_inst%frac_sno_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
-         h1            => lun%h1                      , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
-         h2            => lun%h2                       , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
-         A_v1            => lun%A_v1                       , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
-         A_v2         => lun%A_v2                       , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
+         h1            => lun%tree_bht_urb                      , & ! Input:  [real(r8) (:)   ]  the height of of tree crown base          
+         h2            => lun%tree_tht_urb                       , & ! Input:  [real(r8) (:)   ]  the height of of tree crown          
+         A_v1            => lun%A_v1                       , & ! Input:  [real(r8) (:)   ]  leaf area for urban tree canopy below roof          
+         A_v2         => lun%A_v2                       , & ! Input:  [real(r8) (:)   ]  leaf area for urban tree canopy above roof         
          
          alb_roof_dir       => urbanparams_inst%alb_roof_dir        , & ! Output: [real(r8) (:,:) ]  direct roof albedo                              
          alb_roof_dif       => urbanparams_inst%alb_roof_dif        , & ! Output: [real(r8) (:,:) ]  diffuse roof albedo                             
@@ -193,7 +185,14 @@ contains
          alb_perroad_dif    => urbanparams_inst%alb_perroad_dif     , & ! Output: [real(r8) (:,:) ]  diffuse pervious road albedo                    
          alb_wall_dir       => urbanparams_inst%alb_wall_dir        , & ! Output: [real(r8) (:,:) ]  direct wall albedo                              
          alb_wall_dif       => urbanparams_inst%alb_wall_dif        , & ! Output: [real(r8) (:,:) ]  diffuse wall albedo                             
-        
+         alb_br_tree_dir       => urbanparams_inst%alb_tree_urb_dir        , & ! Output: [real(r8) (:,:) ]  direct below-roof tree albedo  
+         alb_br_tree_dif       => urbanparams_inst%alb_tree_urb_dif        , & ! Output: [real(r8) (:,:) ]  diffuse below-roof tree albedo  
+         alb_ar_tree_dir       => urbanparams_inst%alb_tree_urb_dir        , & ! Output: [real(r8) (:,:) ]  direct above-roof tree albedo  
+         alb_ar_tree_dif       => urbanparams_inst%alb_tree_urb_dif        , & ! Output: [real(r8) (:,:) ]  diffuse above-roof tree albedo  
+         tran_br_tree_dir       => urbanparams_inst%tran_tree_urb_dir        , & ! Output: [real(r8) (:,:) ]  direct below-roof tree transmittance
+         tran_br_tree_dif       => urbanparams_inst%tran_tree_urb_dif        , & ! Output: [real(r8) (:,:) ]  diffuse below-roof tree transmittance
+         tran_ar_tree_dir       => urbanparams_inst%tran_tree_urb_dir        , & ! Output: [real(r8) (:,:) ]  direct above-roof tree transmittance
+         tran_ar_tree_dif       => urbanparams_inst%tran_tree_urb_dif        , & ! Output: [real(r8) (:,:) ]  diffuse above-roof tree transmittance
 
          sabs_roof_dir      =>    solarabs_inst%sabs_roof_dir_lun      , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by roof per unit ground area per unit incident flux
          sabs_sunwall_dir   =>    solarabs_inst%sabs_sunwall_dir_lun   , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by sunwall per unit wall area per unit incident flux
@@ -320,7 +319,7 @@ contains
       do fp = 1,num_urbantreep
          p = filter_urbantreep(fp)
          l = patch%landunit(p)
-         tlai(p) = lai(l)
+         tlai(p) = tree_lai_urb(l)
          rho_urbtree(p,:) = alb_br_tree_dir(l,:)
          tau_urbtree(p,:) = tran_br_tree_dir(l,:)
       end do
@@ -337,7 +336,7 @@ contains
          l = patch%landunit(p)
             if (coszen_patch(p) > 0._r8) then
                if ((col%itype(patch%column(p)) == icol_road_tree) &
-                   .and. (lai(l) > 0._r8)) then
+                   .and. (tree_lai_urb(l) > 0._r8)) then
                       num_urbtreesol = num_urbtreesol + 1
                       filter_urbtreesol(num_urbtreesol) = p
                else
@@ -356,10 +355,10 @@ contains
          l = patch%landunit(p)
 
          vcmaxcintsun(p) = 0._r8
-         vcmaxcintsha(p) = (1._r8 - exp(-extkn*lai(l))) / extkn
+         vcmaxcintsha(p) = (1._r8 - exp(-extkn*tree_lai_urb(l))) / extkn
          ! the nlevcan is always 1 for urban tree columns
-         if (lai(l) > 0._r8) then
-            vcmaxcintsha(p) = vcmaxcintsha(p) / lai(l)
+         if (tree_lai_urb(l) > 0._r8) then
+            vcmaxcintsha(p) = vcmaxcintsha(p) / tree_lai_urb(l)
          else
             vcmaxcintsha(p) = 0._r8
          end if
@@ -908,8 +907,8 @@ contains
     real(r8), intent(in)  :: ht_roof( bounds%begl: )             ! height of urban roof (m) [landunit]
     real(r8), intent(in) :: h1( bounds%begl: )      ! direct beam solar radiation incident attenuated by above-roof tree before reaching to roof,wall, and road, per unit incident flux [landunit, numrad]
     real(r8), intent(in) :: h2( bounds%begl: )      ! direct beam solar radiation incident attenuated by below-roof tree before reaching to wall and road, per unit incident flux [landunit, numrad]
-    real(r8), intent(in) :: A_v1( bounds%begl: )      ! direct beam solar radiation incident attenuated by above-roof tree before reaching to roof,wall, and road, per unit incident flux [landunit, numrad]
-    real(r8), intent(in) :: A_v2( bounds%begl: )      ! direct beam solar radiation incident attenuated by below-roof tree before reaching to wall and road, per unit incident flux [landunit, numrad]
+    real(r8), intent(in) :: A_v1( bounds%begl: )      ! leaf area index of below-roof tree 
+    real(r8), intent(in) :: A_v2( bounds%begl: )      !! leaf area index of above-roof tree 
     real(r8), intent(in)  :: coszen( bounds%begl: )              ! cosine solar zenith angle [landunit]
     real(r8), intent(in)  :: zen( bounds%begl: )                 ! solar zenith angle (radians) [landunit]
     real(r8), intent(in)  :: sdir( bounds%begl: , 1: )             ! direct beam solar radiation incident on horizontal surface [landunit, numrad]
