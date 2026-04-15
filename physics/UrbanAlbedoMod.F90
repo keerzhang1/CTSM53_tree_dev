@@ -228,14 +228,14 @@ contains
          sref_tree_dir   => solarabs_inst%sref_tree_dir_lun   , & ! Output: [real(r8) (:,:) ]  direct  solar reflected  by pervious road per unit ground area per unit incident flux
          sref_tree_dif   => solarabs_inst%sref_tree_dif_lun   , & ! Output: [real(r8) (:,:) ]  diffuse solar reflected  by pervious road per unit ground area per unit incident flux
 
-         sdir_road               => solarabs_inst%sdir_road_lun              , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
-         sdir_sunwall               => solarabs_inst%sdir_sunwall_lun            , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
-         sdir_shadewall               => solarabs_inst%sdir_shadewall_lun            , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
-         sdir_roof                => solarabs_inst%sdir_roof_lun               , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
-         sdir_ar_tree                => solarabs_inst%sdir_ar_tree_lun               , & ! Output:  [real(r8) (:,:) ]  flux absorbed by above-roof canopy before reaching to roof per unit direct flux
-         sdir_br_tree                => solarabs_inst%sdir_br_tree_lun               , & ! Output:  [real(r8) (:,:) ]  flux absorbed by below-roof canopy before reaching to roof per unit direct flux
-         sdir_tree                => solarabs_inst%sdir_tree_lun               , & ! Output:  [real(r8) (:,:) ]  flux absorbed by below-roof canopy before reaching to roof per unit direct flux
-         sdir_force                => solarabs_inst%sdir_force_lun               , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
+         sdir_road               => solarabs_inst%sdir_road_lun              , & ! Output:  [real(r8) (:,:) ] direct beam solar radiation incident on road per unit incident flux with tree attenuation [landunit, numrad]
+         sdir_sunwall               => solarabs_inst%sdir_sunwall_lun            , & ! Output:  [real(r8) (:,:) ]  direct beam solar radiation incident on sun-lit wall per unit incident flux with tree attenuation [landunit, numrad]
+         sdir_shadewall               => solarabs_inst%sdir_shadewall_lun            , & ! Output:  [real(r8) (:,:) ]  direct beam solar radiation incident on shaded wall per unit incident flux with tree attenuation [landunit, numrad]
+         sdir_roof                => solarabs_inst%sdir_roof_lun               , & ! Output:  [real(r8) (:,:) ]  direct beam solar radiation incident on roof per unit incident flux with tree attenuation [landunit, numrad]
+         sdir_ar_tree                => solarabs_inst%sdir_ar_tree_lun               , & ! Output:  [real(r8) (:,:) ]  direct beam solar radiation incident on above-roof tree per unit incident flux with tree attenuation [landunit, numrad]
+         sdir_br_tree                => solarabs_inst%sdir_br_tree_lun               , & ! Output:  [real(r8) (:,:) ]  direct beam solar radiation incident on below-roof tree per unit incident flux with tree attenuation [landunit, numrad]
+         sdir_tree                => solarabs_inst%sdir_tree_lun               , & ! Output:  [real(r8) (:,:) ]  direct beam solar radiation incident on tree per unit incident flux with tree attenuation [landunit, numrad]
+         sdir_force                => solarabs_inst%sdir_force_lun               , & ! Output:  [real(r8) (:,:) ]  direct beam radiation  (vis=forc_sols , nir=forc_soll ) for diagnosis
 
          fabd               => surfalb_inst%fabd_patch              , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
          fabd_sun           => surfalb_inst%fabd_sun_patch          , & ! Output:  [real(r8) (:,:) ]  flux absorbed by sunlit canopy per unit direct flux
@@ -274,7 +274,7 @@ contains
       call system_clock(count_rate=clock_rate)
       call system_clock(start_time)
       !write(6,*)'starting timing...'
-      
+      ! assign tree albedo and transmission values for all urban landunits
       alb_br_tree_dir(:,1)=0.11_r8
       alb_br_tree_dir(:,2)=0.35_r8
       alb_br_tree_dif(:,1)=0.11_r8
@@ -327,7 +327,7 @@ contains
 
       !------------------------------------------------------------------------
       ! Create solar-urbantree filter, filter_urbtreesol and filter_nourbtreesol
-      ! Referred to how filter_vegsol is created in SurfaceAlbedoMod
+      ! I referred to how filter_vegsol is created in SurfaceAlbedoMod
       !------------------------------------------------------------------------
       num_urbtreesol = 0
       num_nourbtreesol = 0
@@ -865,10 +865,9 @@ contains
   
 
 !---------------------------------------------------------------------------------
-  subroutine incident_direct (bounds,num_urbanl, filter_urbanl, &
-       canyon_hwr, wtlunit_roof,ht_roof,coszen, zen,sdir, forc_solad,sdir_road, sdir_sunwall,&
-        sdir_shadewall, sdir_roof, sdir_ar_tree, sdir_br_tree,&
-         sdir_force,h1,h2,A_v2,A_v1)
+  subroutine incident_direct (bounds,num_urbanl, filter_urbanl, canyon_hwr, wtlunit_roof,&
+       ht_roof,coszen, zen,sdir, forc_solad,sdir_road, sdir_sunwall,sdir_shadewall, sdir_roof,&
+       sdir_ar_tree, sdir_br_tree,sdir_force,h1,h2,A_v2,A_v1)
 
     !
     ! !DESCRIPTION:
@@ -958,7 +957,7 @@ contains
     real(r8) ::  sdir_after_ar(bounds%begl:bounds%endl,numrad)! direct beam solar radiation (per unit wall area) attenuated by above roof tree before reaching to wall or road 
 
     real(r8)  :: Kbs                                    ! Extinction coefficient for vegetation foliage
-    ! We could add another function to calculate the gaussian quadrature weights and nodes for any numbers of nodes
+    ! In later stage of this development, we could add another function to calculate the gaussian quadrature weights and nodes for any numbers of nodes
     real(r8)  :: Gauss_nodes(4), Gauss_weights(4)       ! Nodes and weights used in gaussian quadrature integration
     
     ! theta : angle between the sun direction and the along-canyon axis; zen: solar zenith angle
@@ -988,13 +987,11 @@ contains
     real(r8) :: zen_ar_roof2(bounds%begl:bounds%endl)   ! The 2nd critical zenith angle for calculating roof fluxes in tree-above-roof scenario
     real(r8) :: zen_ar_roof1(bounds%begl:bounds%endl)   ! The 1st critical zenith angle for calculating roof fluxes in tree-above-roof scenario
 
-    
-    
     ! these variables are used to calculate Masson2000 solution without tree. They are included to test the consistency between the new and old scheme when LAI=0
     real(r8) :: theta0(bounds%begl:bounds%endl)             ! critical canyon orientation for which road is no longer illuminated
-    real(r8) :: sdir_road_o(bounds%begl:bounds%endl , numrad)     ! direct beam solar radiation (per unit wall area) incident on shaded wall per unit incident flux on the shaded side 
-    real(r8) :: sdir_sunwall_o(bounds%begl:bounds%endl , numrad)  ! direct beam solar radiation (per unit wall area) incident on shaded wall per unit incident flux on the shaded side 
-    real(r8) :: sdir_shadewall_o(bounds%begl:bounds%endl , numrad) ! direct beam solar radiation (per unit wall area) incident on shaded wall per unit incident flux on the shaded side 
+    real(r8) :: sdir_road_o(bounds%begl:bounds%endl , numrad)     ! direct beam solar radiation (per unit wall area) incident on shaded wall per unit incident flux on the shaded side without tree attenuation
+    real(r8) :: sdir_sunwall_o(bounds%begl:bounds%endl , numrad)  ! direct beam solar radiation (per unit wall area) incident on shaded wall per unit incident flux on the shaded side without tree attenuation
+    real(r8) :: sdir_shadewall_o(bounds%begl:bounds%endl , numrad) ! direct beam solar radiation (per unit wall area) incident on shaded wall per unit incident flux on the shaded side without tree attenuation
 
     real(r8) :: latdeg                                 ! latdeg
     real(r8) :: londeg                                 ! londeg    
@@ -1013,6 +1010,7 @@ contains
     SHR_ASSERT_ALL_FL((ubound(ht_roof)     == (/bounds%endl/)),         sourcefile, __LINE__)
     SHR_ASSERT_ALL_FL((ubound(sdir_roof) == (/bounds%endl, numrad/)), sourcefile, __LINE__)
     
+    ! maximum theta is pi/2, 90 deg
     theta_max = rpi / 2.0_r8
     debug_write_dir = .false.!.true.!.false.
     !--------------hard coded values--------------!  
@@ -1026,7 +1024,6 @@ contains
 	  !ca_order=4
 
     Omega=0.6_r8
-    !LAD=0.2_r8    
     LAD=0.4_r8 
     Kbs=0.5_r8
     min_zen = 0.000001_r8
@@ -1073,12 +1070,12 @@ contains
               !write (6,'(A,2F10.3)') 'Tree_abr(l), Tree_at(l)',Tree_abr(l), Tree_at(l) 
           end if    
           
-          ! Determin the ca_order, which influences the flux expressions in the tree-above-roof scenarios
+          ! Determin the ca_order, which determines the flux expressions in the tree-above-roof scenarios
           if (h2(l)+h1(l) > 2.0_r8*ht_roof(l)) then
               write (iulog,*) 'the maximum tree height should be lower than two times of building height. h1 + h2, ht_roof =',h2(l)+h1(l),ht_roof(l)
               write (iulog,*) 'clm model is stopping'
               call endrun(subgrid_index=l, subgrid_level=subgrid_level_landunit, msg=errmsg(sourcefile, __LINE__))
-          else if (h2(l)+h1(l) > ht_roof(l)) then  ! tree above roof
+          else if (h2(l)+h1(l) > ht_roof(l)) then  ! tree above roof scenario
              if (h2(l) > ht_roof(l)) then
                  if (ht_roof(l) < h1(l) + 0.5_r8 * h2(l)) then
                      ca_order(l) = 1 !tree above roof; zen_ar_wr1<3<2<5<4
@@ -1142,7 +1139,7 @@ contains
       end if
     end do   
     
-    ! The Masson 2000 calculation
+    ! The Masson 2000 calculation (for diagnosis)
     do fl = 1,num_urbanl
        l = filter_urbanl(fl)
        if (coszen(l) > 0._r8) then
@@ -1443,7 +1440,7 @@ contains
             
             end if 
             
-            ! calculate the incident direct solar flux without tree using analytical solution
+            ! calculate the incident direct solar flux without tree using analytical solution (Masson 2000)
             sdir_shadewall_o(l,ib) = 0._r8
             ! incident solar radiation on wall and road integrated over all canyon orientations (0 <= theta <= pi/2)
             sdir_road_o(l,ib) = 1.0_r8 *                                    &

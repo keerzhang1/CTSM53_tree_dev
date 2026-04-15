@@ -443,6 +443,12 @@ contains
            laisha_z(p,iv) = tlai_z(p,iv) * (1._r8 - fsun_z(p,iv))
            laisun(p) = laisun(p) + laisun_z(p,iv)
            laisha(p) = laisha(p) + laisha_z(p,iv)
+            ! write(6,*) '----------------leaf lai------------ '
+            ! write(6,*) ' tlai_z(p,iv) = ',  tlai_z(p,iv)
+            ! write(6,*) 'laisun_z(p,iv) = ', laisun_z(p,iv)
+            ! write(6,*) 'laisha_z(p,iv) = ', laisha_z(p,iv)
+            ! write(6,*) 'laisun(p) = ', laisun(p)
+            ! write(6,*) 'laisha(p) = ', laisha(p)
         end do
         if (elai(p) > 0._r8) then
            if (col%itype(c) == icol_road_tree) then 

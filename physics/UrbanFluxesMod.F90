@@ -270,6 +270,8 @@ contains
     real(r8) :: rbl(bounds%begl:bounds%endl)                        ! leaf boundary layer resistance on landunit level [s/m]
     real(r8) :: rshal(bounds%begl:bounds%endl)                 ! leaf shaded stomatal resistance (s/m) (output from Photosynthesis)
     real(r8) :: rsunl(bounds%begl:bounds%endl)                 ! leaf sunlit stomatal resistance (s/m) (output from Photosynthesis)
+    real(r8) :: laisunl(bounds%begl:bounds%endl)                 ! leaf sunlit leaf area 
+    real(r8) :: laishal(bounds%begl:bounds%endl)                 ! leaf shaded leaf area
     real(r8) :: W_roof                                            ! fraction of roof surface that is wet (-)
     real(r8) :: W_road                                     ! fraction of impervious road surface that is wet (-)
     real(r8) :: W_tree                                                ! land model time step (sec)
@@ -301,6 +303,8 @@ contains
          rssha                  => photosyns_inst%rssha_patch                   , & ! Output: [real(r8) (:)   ]  leaf shaded stomatal resistance (s/m) (output from Photosynthesis)
          parsun_z     =>    solarabs_inst%parsun_z_patch       , &  ! Input:  [real(r8) (:,:) ]  par absorbed per unit lai for canopy layer (w/m**2)
          parsha_z     =>    solarabs_inst%parsun_z_patch      , &   ! Input:  [real(r8) (:,:) ]  par absorbed per unit lai for canopy layer (w/m**2)
+         laisun     =>    canopystate_inst%laisun_patch       , &  ! Input:  [real(r8) (:) ]  sunlit leaf area
+         laisha     =>    canopystate_inst%laisha_patch       , &  ! Input:  [real(r8) (:) ]  shaded leaf area
 
          forc_pco2              => atm2lnd_inst%forc_pco2_grc                   , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
          forc_po2               => atm2lnd_inst%forc_po2_grc                    , & ! Input:  [real(r8) (:)   ]  partial pressure o2 (Pa)                                              
@@ -491,9 +495,9 @@ contains
       end do
       
       ! these constants are required to calculate leaf boundary resistance
-      !hard-coced characteristic dimension of the leaves in the direction of wind flow
+      !hard-coded characteristic dimension of the leaves in the direction of wind flow
       dleaf=0.04_r8
-      !hard-coced turbulent transfer coefficient between the canopy surface and canopy air
+      !hard-coded turbulent transfer coefficient between the canopy surface and canopy air
       Cv=0.01_r8
       
       !------------------------------------------------------------------------
@@ -705,6 +709,13 @@ contains
             rb(p)=1/Cv*(ustar(l)/dleaf)**(-0.5_r8)
             rbl(l)=rb(p)
             rb1(p)=rb(p)
+            laisunl(l) = laisun(p)
+            laishal(l) = laisha(p)
+            ! write(6,*) '----------------leaf boundary layer resistance------------ '
+            ! write(6,*) 'laisunl(l) = ', laisunl(l)
+            ! write(6,*) 'laishal(l) = ', laishal(l)
+            ! write(6,*) 'rbl(l) = ', rbl(l)
+            ! write(6,*) 'tree_lai_urb(l) = ', tree_lai_urb(l)
          end do
          
          do fl = 1, num_urbanl
@@ -803,7 +814,7 @@ contains
             l = patch%landunit(p)
 
             rshal(l) = rssha(p)
-            rsunl(l) = rssha(p)            
+            rsunl(l) = rssun(p)            
          end do
          ! This is the first term in the equation solutions for urban canopy air temperature
          ! and specific humidity (numerator) and is a landunit quantity
@@ -882,17 +893,20 @@ contains
                
             else if (ctype(c) == icol_road_tree) then
                ! scaled sensible heat conductance
-               wtus(c) = (W_tree/W_tot)*rbl(l)/(tree_lai_urb(l))
+               wtus(c) = (W_tree/W_tot)/rbl(l)*(tree_lai_urb(l))
                wtus_road_tree(l) = wtus(c)
                ! unscaled sensible heat conductance
-               wtus_road_tree_unscl(l) = 1._r8/canyon_resistance(l)
+               wtus_road_tree_unscl(l) = 1._r8/rbl(l)*(tree_lai_urb(l))
 
                ! scaled latent heat conductance
-               wtuq(c) = (W_tree/W_tot)*(rbl(l)+rsunl(l)+rshal(l))
+               ! this requires further change - rbl should be divided by tree_lai_urb and rsunl should be divided byb Lsun
+               ! conductance = laisunl(l)/(rbl(l)+rsunl(l)) + laishal(l)/(rbl(l)+rshal(l)) = 1/resistance
+               wtuq(c) = (W_tree/W_tot)*(laisunl(l)/(rbl(l)+rsunl(l)) + laishal(l)/(rbl(l)+rshal(l)))
                wtuq_road_tree(l) = wtuq(c)
                ! unscaled latent heat conductance
-               wtuq_road_tree_unscl(l) = 1._r8/canyon_resistance(l)
-               
+               ! this requires further change - 1/(rbl(l)/tree_lai_urb(l)+rsunl(l)/laisunl(l)+rshal(l)/laishal(l))
+               wtuq_road_tree_unscl(l) = laisunl(l)/(rbl(l)+rsunl(l)) + laishal(l)/(rbl(l)+rshal(l))
+                
             else if (ctype(c) == icol_road_imperv) then
 
                ! scaled sensible heat conductance

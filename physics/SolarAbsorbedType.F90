@@ -105,6 +105,12 @@ module SolarAbsorbedType
     real(r8), pointer :: lwup_ar_tree_lun      (:) ! lun upward longwave flux at above-roof tree
     real(r8), pointer :: lwup_tree_lun      (:) ! lun upward longwave flux at above-roof tree
     real(r8), pointer :: lwup_canyon_lun       (:) ! lun upward longwave flux at canyon center
+    real(r8), pointer :: lwdown_road_lun       (:) ! lun downward longwave flux at road
+    real(r8), pointer :: lwdown_sunwall_lun       (:) ! lun downward longwave flux at sunlit wall
+    real(r8), pointer :: lwdown_shadewall_lun       (:) ! lun downward longwave flux at shaded wall
+    real(r8), pointer :: lwdown_roof_lun       (:) ! lun downward longwave flux at roof
+    real(r8), pointer :: lwdown_br_tree_lun       (:) ! lun downward longwave flux at below-roof tree
+    real(r8), pointer :: lwdown_ar_tree_lun       (:) ! lun downward longwave flux at above-roof tree
 
      ! Currently needed by lake code 
      ! TODO (MV 8/20/2014) should be moved in the future
@@ -287,8 +293,15 @@ contains
     allocate(this%lwup_ar_tree_lun(begl:endl))          ; this%lwup_ar_tree_lun(:) = nan
     allocate(this%lwup_tree_lun(begl:endl))          ; this%lwup_tree_lun(:) = nan
     allocate(this%lwup_canyon_lun(begl:endl))           ; this%lwup_canyon_lun(:) = nan
-        
-  end subroutine InitAllocate
+    allocate(this%lwup_canyon_lun(begl:endl))           ; this%lwup_canyon_lun(:) = nan
+    allocate(this%lwdown_road_lun(begl:endl))           ; this%lwdown_road_lun(:) = nan    
+    allocate(this%lwdown_sunwall_lun(begl:endl))           ; this%lwdown_sunwall_lun(:) = nan    
+    allocate(this%lwdown_shadewall_lun(begl:endl))           ; this%lwdown_shadewall_lun(:) = nan    
+    allocate(this%lwdown_roof_lun(begl:endl))           ; this%lwdown_roof_lun(:) = nan    
+    allocate(this%lwdown_br_tree_lun(begl:endl))           ; this%lwdown_br_tree_lun(:) = nan    
+    allocate(this%lwdown_ar_tree_lun(begl:endl))           ; this%lwdown_ar_tree_lun(:) = nan    
+
+   end subroutine InitAllocate
 
   !-----------------------------------------------------------------------
   subroutine InitHistory(this, bounds)
@@ -572,107 +585,142 @@ contains
 
     this%lwnet_roof_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_ROOF', units='unitless', &
-      avgflag='A', long_name='Unitless incident net longwave flux at shaded roof', &
+      avgflag='A', long_name='Incident net longwave flux at shaded roof (W/m^2)', &
       ptr_lunit=this%lwnet_roof_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
     this%lwnet_improad_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_IMPROAD', units='unitless', &
-      avgflag='A', long_name='Unitless incident net longwave flux at impervious road', &
+      avgflag='A', long_name='Incident net longwave flux at impervious road (W/m^2)', &
       ptr_lunit=this%lwnet_improad_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
       
     this%lwnet_perroad_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_PERROAD', units='unitless', &
-      avgflag='A', long_name='Unitless incident net longwave flux at pervious road', &
+      avgflag='A', long_name='Incident net longwave flux at pervious road (W/m^2)', &
       ptr_lunit=this%lwnet_perroad_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
 
     this%lwnet_sunwall_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_SUNWALL', units='unitless', &
-      avgflag='A', long_name='Unitless incident net longwave flux at sunlit wall', &
+      avgflag='A', long_name='Incident net longwave flux at sunlit wall (W/m^2)', &
       ptr_lunit=this%lwnet_sunwall_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
     this%lwnet_shadewall_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_SHADEWALL', units='unitless', &
-      avgflag='A', long_name='Unitless incident net longwave flux at shaded wall', &
+      avgflag='A', long_name='Incident net longwave flux at shaded wall (W/m^2)', &
       ptr_lunit=this%lwnet_shadewall_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
       
     this%lwnet_br_tree_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_BR_TREE', units='unitless', &
-      avgflag='A', long_name='Unitless incident net longwave flux at below-roof tree', &
+      avgflag='A', long_name='Incident net longwave flux at below-roof tree (W/m^2)', &
       ptr_lunit=this%lwnet_br_tree_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
     this%lwnet_ar_tree_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_AR_TREE', units='unitless', &
-      avgflag='A', long_name='Unitless incident net longwave flux at above-roof tree', &
+      avgflag='A', long_name='Incident net longwave flux at above-roof tree (W/m^2)', &
       ptr_lunit=this%lwnet_ar_tree_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
       
     this%lwnet_tree_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_TREE', units='unitless', &
-      avgflag='A', long_name='Unitless incident net longwave flux at road tree', &
+      avgflag='A', long_name='Incident net longwave flux at road tree (W/m^2)', &
       ptr_lunit=this%lwnet_tree_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
       
     this%lwnet_canyon_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_CANYON', units='unitless', &
-      avgflag='A', long_name='Unitless incident net longwave flux at canyon center', &
+      avgflag='A', long_name='Incident net longwave flux at canyon center (W/m^2)', &
       ptr_lunit=this%lwnet_canyon_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
-      
+
+    this%lwdown_road_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWDOWN_ROAD', units='unitless', &
+      avgflag='A', long_name='Incident downward longwave flux at road (W/m^2)', &
+      ptr_lunit=this%lwdown_road_lun, set_nourb=spval, l2g_scale_type='unity', &
+      default='inactive')   
+
+    this%lwdown_sunwall_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWDOWN_SUNWALL', units='unitless', &
+      avgflag='A', long_name='Incident downward longwave flux at sunlit wall (W/m^2)', &
+      ptr_lunit=this%lwdown_sunwall_lun, set_nourb=spval, l2g_scale_type='unity', &
+      default='inactive')   
+
+      this%lwdown_shadewall_lun(begl:endl) = spval
+      call hist_addfld1d (fname='LWDOWN_SHADEWALL', units='unitless', &
+        avgflag='A', long_name='Incident downward longwave flux at shaded wall (W/m^2)', &
+        ptr_lunit=this%lwdown_shadewall_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+
+      this%lwdown_roof_lun(begl:endl) = spval
+      call hist_addfld1d (fname='LWDOWN_ROOF', units='unitless', &
+        avgflag='A', long_name='Incident downward longwave flux at roof (W/m^2)', &
+        ptr_lunit=this%lwdown_roof_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+
+      this%lwdown_br_tree_lun(begl:endl) = spval
+      call hist_addfld1d (fname='LWDOWN_BR_TREE', units='unitless', &
+        avgflag='A', long_name='Incident downward longwave flux at below-roof tree (W/m^2)', &
+        ptr_lunit=this%lwdown_br_tree_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+
+      this%lwdown_ar_tree_lun(begl:endl) = spval
+      call hist_addfld1d (fname='LWDOWN_AR_TREE', units='unitless', &
+        avgflag='A', long_name='Incident downward longwave flux at above-roof tree (W/m^2)', &
+        ptr_lunit=this%lwdown_ar_tree_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+        
     this%lwup_roof_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWUP_ROOF', units='unitless', &
-      avgflag='A', long_name='Unitless incident upward longwave flux at shaded roof', &
+      avgflag='A', long_name='Incident upward longwave flux at shaded roof (W/m^2)', &
       ptr_lunit=this%lwup_roof_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
     this%lwup_improad_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWUP_IMPROAD', units='unitless', &
-      avgflag='A', long_name='Unitless incident upward longwave flux at impervious road', &
+      avgflag='A', long_name='Incident upward longwave flux at impervious road (W/m^2)', &
       ptr_lunit=this%lwup_improad_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
     this%lwup_perroad_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWUP_PERROAD', units='unitless', &
-      avgflag='A', long_name='Unitless incident upward longwave flux at pervious road', &
+      avgflag='A', long_name='Incident upward longwave flux at pervious road (W/m^2)', &
       ptr_lunit=this%lwup_perroad_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
     this%lwup_sunwall_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWUP_SUNWALL', units='unitless', &
-      avgflag='A', long_name='Unitless incident upward longwave flux at sunlit wall', &
+      avgflag='A', long_name='Incident upward longwave flux at sunlit wall (W/m^2)', &
       ptr_lunit=this%lwup_sunwall_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
       
     this%lwup_shadewall_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWUP_SHADEWALL', units='unitless', &
-      avgflag='A', long_name='Unitless incident upward longwave flux at shaded wall', &
+      avgflag='A', long_name='Incident upward longwave flux at shaded wall (W/m^2)', &
       ptr_lunit=this%lwup_shadewall_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
       
     this%lwup_br_tree_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWUP_BR_TREE', units='unitless', &
-      avgflag='A', long_name='Unitless incident upward longwave flux at below-roof tree', &
+      avgflag='A', long_name='Incident upward longwave flux at below-roof tree (W/m^2)', &
       ptr_lunit=this%lwup_br_tree_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
       
     this%lwup_ar_tree_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWUP_AR_TREE', units='unitless', &
-      avgflag='A', long_name='Unitless incident upward longwave flux at above-roof tree', &
+      avgflag='A', long_name='Incident upward longwave flux at above-roof tree (W/m^2)', &
       ptr_lunit=this%lwup_ar_tree_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
       
     this%lwup_tree_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWUP_TREE', units='unitless', &
-      avgflag='A', long_name='Unitless incident upward longwave flux at road tree', &
+      avgflag='A', long_name='Incident upward longwave flux at road tree (W/m^2)', &
       ptr_lunit=this%lwup_tree_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
       
     this%lwup_canyon_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWUP_CANYON', units='unitless', &
-      avgflag='A', long_name='Unitless incident upward longwave flux at canyon center', &
+      avgflag='A', long_name='Incident upward longwave flux at canyon center (W/m^2)', &
       ptr_lunit=this%lwup_canyon_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
      
-
     this%fsa_patch(begp:endp) = spval
     call hist_addfld1d (fname='FSA', units='W/m^2',  &
          avgflag='A', long_name='absorbed solar radiation', &

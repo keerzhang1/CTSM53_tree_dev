@@ -181,9 +181,10 @@ module UrbanParamsType
      real(r8), pointer :: A_v2      (:)      ! Unweighted shortwave sky view factor for ground  
      real(r8), pointer :: h1      (:)      ! Unweighted shortwave view factor from sky to ground  
      real(r8), pointer :: h2      (:)      ! Unweighted shortwave sky view factor for ground  
-     !K real(r8), pointer :: frontal_ai_out      (:)      ! Unweighted shortwave sky view factor for ground  
-     !K real(r8), pointer :: plan_ai_out      (:)      ! Unweighted shortwave sky view factor for ground  
-       !K real(r8), pointer :: plan_ai_out      (:)      ! Unweighted shortwave sky view factor for ground  
+     real(r8), pointer :: frontal_ai_out      (:)      ! frontal area index for output 
+     real(r8), pointer :: plan_ai_out      (:)      ! plan area index for output
+     real(r8), pointer :: z_d_town_out      (:)      ! displacement height for output
+     real(r8), pointer :: z_0_town_out      (:)      ! roughness length for output
   ! ------------------[kz.2]Ray tracing test-------------------------  
      real(r8), allocatable :: wind_hgt_canyon     (:)   ! lun height above road at which wind in canyon is to be computed (m)
      real(r8), allocatable :: em_roof             (:)   ! lun roof emissivity
@@ -544,10 +545,10 @@ contains
     allocate(this%h1                 (begl:endl))                        ; this%h1             (:)     = nan
     allocate(this%h2                 (begl:endl))                        ; this%h2             (:)     = nan
 
-    !Kallocate(this%z_d_town_out         (begl:endl))                        ; this%z_d_town_out     (:)     = nan
-    !Kallocate(this%z_0_town_out         (begl:endl))                        ; this%z_0_town_out     (:)     = nan
-    !Kallocate(this%plan_ai_out         (begl:endl))                        ; this%plan_ai_out     (:)     = nan
-    !Kallocate(this%frontal_ai_out         (begl:endl))                        ; this%frontal_ai_out     (:)     = nan
+    allocate(this%z_d_town_out         (begl:endl))                        ; this%z_d_town_out     (:)     = nan
+    allocate(this%z_0_town_out         (begl:endl))                        ; this%z_0_town_out     (:)     = nan
+    allocate(this%plan_ai_out         (begl:endl))                        ; this%plan_ai_out     (:)     = nan
+    allocate(this%frontal_ai_out         (begl:endl))                        ; this%frontal_ai_out     (:)     = nan
     
    !------------------------------------------------------------------------------
    ! These values give a single-layer urban canyon for view factor calculation
@@ -637,11 +638,7 @@ contains
           wcan=lun%ht_roof(l)/lun%canyon_hwr(l)        
           wbui = lun%ht_roof(l)/(lun%canyon_hwr(l)*(1._r8-lun%wtlunit_roof(l))/lun%wtlunit_roof(l))
           
-          lad(:)=lun%tree_lai_urb(l)
-          ! These are unused but keep for now:
-          lads=lad  ! for shortwave calcs (usually equal to "lad")
-          ladl=lad  ! lfor longwave calcs (usually equal to "lad")
-          
+       
           ! For now, specify various h1 and h2 combincations for test
           call RANDOM_NUMBER(rnum)
                             
@@ -651,13 +648,21 @@ contains
           dray=0.05_r8*min(min(dzcan,wcan),wbui)/dzcan
 
           if ((lun%tree_bht_urb(l)+lun%tree_tht_urb(l))<= lun%ht_roof(l)) then
+              lad(1)=lun%tree_lai_urb(l)/(lun%ht_roof(l)-lun%tree_bht_urb(l))
+              lad(2) = 0._r8
               lun%A_v1(l)=wcan*lad(1)*omega(1)*lun%tree_tht_urb(l)*2._r8
               lun%A_v2(l)=0._r8 
           else if ((lun%tree_bht_urb(l)+lun%tree_tht_urb(l)) > lun%ht_roof(l)) then
+              lad(1)=lun%tree_lai_urb(l)/lun%tree_tht_urb(l)*(lun%ht_roof(l)-lun%tree_bht_urb(l))
+              lad(2) =lun%tree_lai_urb(l)/lun%tree_tht_urb(l)*(lun%tree_bht_urb(l)+lun%tree_tht_urb(l)-lun%ht_roof(l))
               lun%A_v1(l)=wcan*lad(1)*omega(1)*(lun%ht_roof(l)-lun%tree_bht_urb(l))*2._r8
               lun%A_v2(l)=wcan*lad(2)*omega(2)*(lun%tree_bht_urb(l)+lun%tree_tht_urb(l)-lun%ht_roof(l))*2._r8   
           end if  
-                              
+          
+          ! These are unused but keep for now:
+          lads=lad  ! for shortwave calcs (usually equal to "lad")
+          ladl=lad  ! lfor longwave calcs (usually equal to "lad")
+
           wtroad_tree=lun%wtroad_tree(l)
           h1=lun%tree_bht_urb(l)
           h2=lun%tree_tht_urb(l)
@@ -763,6 +768,12 @@ contains
           this%svft_f_out(l)          = svft_f
           this%svft_k_out(l)          = svft_k
 
+         !   write(6,*) '----------------view factors------------ '
+         !   write(6,*) 'svfr_k(:) = ', svfr_k(:)
+         !   write(6,*) 'svft_f = ', svft_f
+         !   write(6,*) 'vfrv_k(:,:) = ', vfrv_k(:,:)
+         !   write(6,*) 'ksr1d(:) = ', ksr1d(:)
+
 !-------------------[kz.6]Ray tracing test------------------------- 
           
           ! Inferred from Sailor and Lu 2004
@@ -786,6 +797,22 @@ contains
           ! Calculate urban land unit aerodynamic constants using Macdonald (1998) as used in
           ! Grimmond and Oke (1999)
           !----------------------------------------------------------------------------------
+
+          ! Set plan area index to roof fraction (see Figure 2 in Grimmond and Oke (1999))
+          ! Restrict this value to that of "real cities" as shown in Figure 1 in Grimmond and Ok (1999).
+          ! This is to avoid unrealistic combinations of plan and frontal area index that can generate
+          ! extremely small values of roughness length that result in stagnant urban canopy air and very
+          ! high daytime temperatures.
+          ! This is from Keith's note - we need to keep an eye on this as we add more urban land units and more complex urban forms. 
+          !  Jackson data occasionally resulted in unrealistic combinations of plan and frontal area index that can generate extremely small values of roughness length ! that result in stagnant urban canopy air and very high daytime temperatures. 
+          ! U-surf may have better-behaved data
+          ! plan_ai = max(min(lun%wtlunit_roof(l), 0.62_r8), 0.1_r8) 
+
+          ! Derive frontal_ai from equations (7) and (8) in Porson et al. (2010).
+          ! See also equation (1) in Masson et al. (2020). The 2/rpi
+          ! factor accounts for street orientational averaging.
+          ! Restrict this value to that of "real cities" as shown in Figure 1 in Grimmond and Ok (1999).
+          ! frontal_ai = max(2._r8 * (1._r8 - plan_ai) * lun%canyon_hwr(l)/ rpi, 0.05_r8)
 
           ! Use plan_ai = roof fraction. See notes from 6-9-21
           plan_ai = lun%wtlunit_roof(l)
@@ -839,11 +866,16 @@ contains
                   exp(-(1/(vkc**2)*0.5_r8*beta*C_d*(1.0_r8 - lun%z_d_town(l)/lun%ht_can_eff(l))*(frontal_b+bv_drag_ratio*frontal_v)/A_tot)**(-0.5_r8))
           end if
 
-          !Kthis%plan_ai_out(l)=plan_ai
-          !Kthis%frontal_ai_out(l)=frontal_ai
-          !Kthis%z_d_town_out(l)=lun%z_d_town(l)
-          !Kthis%z_0_town_out(l)=lun%z_0_town(l)
+          this%plan_ai_out(l)=plan_ai
+          this%frontal_ai_out(l)=frontal_ai
+          this%z_d_town_out(l)=lun%z_d_town(l)
+          this%z_0_town_out(l)=lun%z_0_town(l)
 
+         !   write(6,*) '----------------urban roughness------------ '
+         !   write(6,*) 'plan_ai(l) = ', plan_ai
+         !   write(6,*) 'frontal_ai(l) = ', frontal_ai
+         !   write(6,*) 'z_d_town(l) = ', lun%z_d_town(l)
+         !   write(6,*) 'z_0_town(l) = ', lun%z_0_town(l)
        else ! Not urban point 
 
           this%eflx_traffic_factor(l) = spval
@@ -940,6 +972,11 @@ contains
           this%svfv_k_out(l,:)        = spval
           this%svfr_k_out(l,:)        = spval
 
+          this%plan_ai_out(l)        = spval
+          this%frontal_ai_out(l)        = spval
+          this%z_d_town_out(l)        = spval
+          this%z_0_town_out(l)        = spval
+          
 !-------------------[kz.7]Ray tracing test-------------------------     
        end if
     end do
@@ -1407,10 +1444,10 @@ contains
              if ( .not. urban_valid(nl) .or. &
                   urbinp%canyon_hwr(nl,n)            <= 0._r8 .or. &
 !-------------------[kz.10]Ray tracing test-------------------------                    
-                  urbinp%tree_lai_urb(nl,n)                   <= 0._r8 .or. &
-                  urbinp%wtroad_tree(nl,n)              <= 0._r8 .or. &   
+                  urbinp%tree_lai_urb(nl,n)                   < 0._r8 .or. &
+                  urbinp%wtroad_tree(nl,n)              < 0._r8 .or. &   
                   urbinp%tree_bht_urb(nl,n)              <= 0._r8 .or. &   
-                  urbinp%tree_tht_urb(nl,n)              <= 0._r8 .or. &   
+                  urbinp%tree_tht_urb(nl,n)              < 0._r8 .or. &   
 !-------------------[kz.10]Ray tracing test-------------------------                                     
                   urbinp%em_improad(nl,n)            <= 0._r8 .or. &
                   urbinp%em_perroad(nl,n)            <= 0._r8 .or. &
