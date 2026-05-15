@@ -648,15 +648,17 @@ contains
           dray=0.05_r8*min(min(dzcan,wcan),wbui)/dzcan
 
           if ((lun%tree_bht_urb(l)+lun%tree_tht_urb(l))<= lun%ht_roof(l)) then
-              lad(1)=lun%tree_lai_urb(l)/(lun%ht_roof(l)-lun%tree_bht_urb(l))
-              lad(2) = 0._r8
-              lun%A_v1(l)=wcan*lad(1)*omega(1)*lun%tree_tht_urb(l)*2._r8
-              lun%A_v2(l)=0._r8 
+              lad(1)=max(lun%tree_lai_urb(l)/lun%tree_bht_urb(l), 1e-6_r8)
+              lad(2) = 1e-6_r8!0._r8
+              lun%A_v1(l)=max(wcan*lad(1)*omega(1)*lun%tree_tht_urb(l)*2._r8, 1e-6_r8)
+              lun%A_v2(l)=1e-6_r8!0._r8 
           else if ((lun%tree_bht_urb(l)+lun%tree_tht_urb(l)) > lun%ht_roof(l)) then
-              lad(1)=lun%tree_lai_urb(l)/lun%tree_tht_urb(l)*(lun%ht_roof(l)-lun%tree_bht_urb(l))
-              lad(2) =lun%tree_lai_urb(l)/lun%tree_tht_urb(l)*(lun%tree_bht_urb(l)+lun%tree_tht_urb(l)-lun%ht_roof(l))
-              lun%A_v1(l)=wcan*lad(1)*omega(1)*(lun%ht_roof(l)-lun%tree_bht_urb(l))*2._r8
-              lun%A_v2(l)=wcan*lad(2)*omega(2)*(lun%tree_bht_urb(l)+lun%tree_tht_urb(l)-lun%ht_roof(l))*2._r8   
+              lad(1)=max(lun%tree_lai_urb(l)/lun%tree_tht_urb(l)*(lun%ht_roof(l)-lun%tree_bht_urb(l))/lun%ht_roof(l), 1e-6_r8)
+              lad(2) =max(lun%tree_lai_urb(l)/lun%tree_tht_urb(l)*(lun%tree_bht_urb(l)+lun%tree_tht_urb(l)-lun%ht_roof(l))/lun%ht_roof(l), 1e-6_r8)
+              !lad(1)=max(lun%tree_lai_urb(l)/lun%tree_tht_urb(l), 1e-6_r8)
+              !lad(2) =max(lun%tree_lai_urb(l)/lun%tree_tht_urb(l), 1e-6_r8)
+              lun%A_v1(l)=max(wcan*lad(1)*omega(1)*(lun%ht_roof(l)-lun%tree_bht_urb(l))*2._r8, 1e-6_r8)
+              lun%A_v2(l)=max(wcan*lad(2)*omega(2)*(lun%tree_bht_urb(l)+lun%tree_tht_urb(l)-lun%ht_roof(l))*2._r8, 1e-6_r8)   
           end if  
           
           ! These are unused but keep for now:
@@ -1799,8 +1801,12 @@ contains
     
     kk=1
     phi1=0.0_r8
-    
-    lad_tree=lad/wtroad_tree
+    ! should write a statement to check when wtroad_tree=0, if lad and lai are both 0
+    if (wtroad_tree > 1e-6_r8) then
+      lad_tree=lad/wtroad_tree
+    else
+      lad_tree=0._r8
+    endif
     
     call init_random_seed(1234)
     call RANDOM_NUMBER(rnum)

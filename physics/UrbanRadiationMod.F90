@@ -786,7 +786,7 @@ contains
     real(r8) :: improad_r_sky(bounds%begl:bounds%endl)       ! improad_r to sky (W/m**2)
     real(r8) :: improad_r_sunwall(bounds%begl:bounds%endl)   ! improad_r to sunlit wall (W/m**2)
     real(r8) :: improad_r_shadewall(bounds%begl:bounds%endl) ! improad_r to shaded wall (W/m**2)
-    real(r8) :: improad_e(bounds%begl:bounds%endl)           ! emitted longwave for improad (W/m**2)
+    !real(r8) :: improad_e(bounds%begl:bounds%endl)           ! emitted longwave for improad (W/m**2)
     real(r8) :: improad_e_sky(bounds%begl:bounds%endl)       ! improad_e to sky (W/m**2)
     real(r8) :: improad_e_sunwall(bounds%begl:bounds%endl)   ! improad_e to sunlit wall (W/m**2)
     real(r8) :: improad_e_shadewall(bounds%begl:bounds%endl) ! improad_e to shaded wall (W/m**2)
@@ -961,6 +961,7 @@ contains
       frv1d =>    urbanparams_inst%frv1d_out , & ! Input:  [real(r8) (:,:,:) ]  Monte carlo view factor  from roof to vegetation [landunit, nzcanm]              
       lwnet_roof   => solarabs_inst%lwnet_roof_lun   , & ! Output: [real(r8) (:) ]  net longwave flux at shaded roof
       lwnet_improad     => solarabs_inst%lwnet_improad_lun     , & ! Output: [real(r8) (:) ]  net longwave flux at impervious road
+      improad_e     => solarabs_inst%lw_emi_improad_lun     , & ! Output: [real(r8) (:) ]  emitted longwave flux at impervious road
       lwnet_perroad     => solarabs_inst%lwnet_perroad_lun     , & ! Output: [real(r8) (:) ]  net longwave flux at pervious road
       lwnet_sunwall     => solarabs_inst%lwnet_sunwall_lun     , & ! Output: [real(r8) (:) ]  net longwave flux at sunlit wall
       lwnet_shadewall   => solarabs_inst%lwnet_shadewall_lun   , & ! Output: [real(r8) (:) ]  net longwave flux at shaded wall
@@ -1043,11 +1044,6 @@ contains
      do fl = 1,num_urbanl
         l = filter_urbanl(fl)
         
-        if (l==3) then   
-            debug_write=.false. 
-        else 
-            debug_write=.false. 
-        end if 
         ! initial absorption, reflection, and emission for road and both walls. 
         ! distribute reflected and emitted radiation to sky, road, and walls according 
         ! to appropriate view factor. radiation reflected to road and walls will
@@ -1202,6 +1198,47 @@ contains
 
         err_e=br_tree_e(l) -br_tree_e_br_tree(l) -br_tree_e_ar_tree(l)*A_v2(l)/A_v1(l) -br_tree_e_sky(l)-br_tree_e_road(l)*A_g(l)/A_v1(l)-br_tree_e_sunwall(l)*A_w(l)/A_v1(l)-br_tree_e_shadewall(l)*A_w(l)/A_v1(l)
         err_r=br_tree_r(l) -br_tree_r_br_tree(l) -br_tree_r_ar_tree(l)*A_v2(l)/A_v1(l) -br_tree_r_sky(l)-br_tree_r_road(l)*A_g(l)/A_v1(l)-br_tree_r_sunwall(l)*A_w(l)/A_v1(l)-br_tree_r_shadewall(l)*A_w(l)/A_v1(l)
+        
+         if (debug_write) then
+            write(6,*) '-----br_tree inputs------- l = ', l
+            write(6,*) 'em_br_tree(l)      = ', em_br_tree(l)
+            write(6,*) 'lwdown_br_tree(l)  = ', lwdown_br_tree(l)
+            write(6,*) 't_br_tree(l)       = ', t_br_tree(l)
+            write(6,*) 'sb                 = ', sb
+
+            write(6,*) 'fvs1d(l,1)         = ', fvs1d(l,1)
+            write(6,*) 'fvg1d(l,1)         = ', fvg1d(l,1)
+            write(6,*) 'fvw1d(l,1,1)       = ', fvw1d(l,1,1)
+            write(6,*) 'fvv1d(l,1,1)       = ', fvv1d(l,1,1)
+            write(6,*) 'fvv1d(l,1,2)       = ', fvv1d(l,1,2)
+
+            write(6,*) 'A_v1(l)            = ', A_v1(l)
+            write(6,*) 'A_v2(l)            = ', A_v2(l)
+            write(6,*) 'A_g(l)             = ', A_g(l)
+            write(6,*) 'A_w(l)             = ', A_w(l)
+
+            write(6,*) 'br_tree_a(l)       = ', br_tree_a(l)
+            write(6,*) 'br_tree_r(l)       = ', br_tree_r(l)
+            write(6,*) 'br_tree_e(l)       = ', br_tree_e(l)
+
+            write(6,*) 'br_tree_r_sky(l)   = ', br_tree_r_sky(l)
+            write(6,*) 'br_tree_r_road(l)  = ', br_tree_r_road(l)
+            write(6,*) 'br_tree_r_sunwall(l)= ', br_tree_r_sunwall(l)
+            write(6,*) 'br_tree_r_shadewall(l)= ', br_tree_r_shadewall(l)
+            write(6,*) 'br_tree_r_br_tree(l)= ', br_tree_r_br_tree(l)
+            write(6,*) 'br_tree_r_ar_tree(l)= ', br_tree_r_ar_tree(l)
+
+            write(6,*) 'br_tree_e_sky(l)   = ', br_tree_e_sky(l)
+            write(6,*) 'br_tree_e_road(l)  = ', br_tree_e_road(l)
+            write(6,*) 'br_tree_e_sunwall(l)= ', br_tree_e_sunwall(l)
+            write(6,*) 'br_tree_e_shadewall(l)= ', br_tree_e_shadewall(l)
+            write(6,*) 'br_tree_e_br_tree(l)= ', br_tree_e_br_tree(l)
+            write(6,*) 'br_tree_e_ar_tree(l)= ', br_tree_e_ar_tree(l)
+
+            write(6,*) 'A_v2/A_v1          = ', A_v2(l)/A_v1(l)
+            write(6,*) 'A_g/A_v1           = ', A_g(l)/A_v1(l)
+            write(6,*) 'A_w/A_v1           = ', A_w(l)/A_v1(l)
+         end if
         if (debug_write) then
            write(6,*) '-----br_tree-------l=---', l
            write(6,*) 'err_e,err_r', err_e,err_r
@@ -1316,12 +1353,7 @@ contains
 
      do fl = 1,num_urbanl
         l = filter_urbanl(fl)
-        
-        if (l==3) then   
-            debug_write=.false. 
-        else 
-            debug_write=.false. 
-        end if
+
         
         do iter = 1, n
         !do iter = 1, 1

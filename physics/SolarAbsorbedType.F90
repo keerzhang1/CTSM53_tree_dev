@@ -89,6 +89,7 @@ module SolarAbsorbedType
 
     real(r8), pointer :: lwnet_roof_lun   (:) ! lun net longwave flux at shaded roof
     real(r8), pointer :: lwnet_improad_lun     (:) ! lun net longwave flux at impervious road
+    real(r8), pointer :: lw_emi_improad_lun     (:) ! lun emitted longwave flux at impervious road
     real(r8), pointer :: lwnet_perroad_lun     (:) ! lun net longwave flux at pervious road
     real(r8), pointer :: lwnet_sunwall_lun     (:) ! lun net longwave flux at sunlit wall
     real(r8), pointer :: lwnet_shadewall_lun   (:) ! lun net longwave flux at shaded wall
@@ -276,6 +277,7 @@ contains
     
     allocate(this%lwnet_roof_lun(begl:endl))       ; this%lwnet_roof_lun(:) = nan
     allocate(this%lwnet_improad_lun(begl:endl))         ; this%lwnet_improad_lun(:) = nan
+    allocate(this%lw_emi_improad_lun(begl:endl))         ; this%lw_emi_improad_lun(:) = nan
     allocate(this%lwnet_perroad_lun(begl:endl))         ; this%lwnet_perroad_lun(:) = nan
 
     allocate(this%lwnet_sunwall_lun(begl:endl))         ; this%lwnet_sunwall_lun(:) = nan
@@ -590,10 +592,16 @@ contains
       default='inactive')
     this%lwnet_improad_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_IMPROAD', units='unitless', &
-      avgflag='A', long_name='Incident net longwave flux at impervious road (W/m^2)', &
+      avgflag='A', long_name='Net longwave flux at impervious road (W/m^2)', &
       ptr_lunit=this%lwnet_improad_lun, set_nourb=spval, l2g_scale_type='unity', &
       default='inactive')
-      
+
+    this%lw_emi_improad_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LW_EMI_IMPROAD', units='unitless', &
+      avgflag='A', long_name='Emitted longwave flux at impervious road (W/m^2)', &
+      ptr_lunit=this%lw_emi_improad_lun, set_nourb=spval, l2g_scale_type='unity', &
+      default='inactive')
+
     this%lwnet_perroad_lun(begl:endl) = spval
     call hist_addfld1d (fname='LWNET_PERROAD', units='unitless', &
       avgflag='A', long_name='Incident net longwave flux at pervious road (W/m^2)', &

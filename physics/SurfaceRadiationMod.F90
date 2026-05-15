@@ -465,14 +465,14 @@ contains
         ! are canopy integrated so that layer values equal big leaf values.
 
         g = patch%gridcell(p)
-        do iv = 1, nrad(p)
-          write (6,'(A,I5)') '-------------------(p):before parsun_z------------------- ', p
-          write (6,'(A,I5)') '-------------------iv---------------- ', iv
-          write (6,'(A,1X,*(F10.5,1X))') 'forc_solad_col(c,ipar),forc_solai(g,ipar) ', forc_solad_col(c,ipar),forc_solai(g,ipar)
-          write (6,'(A,1X,*(F10.5,1X))') 'sabs_tree_dif(l,ipar),sabs_tree_dir(l,ipar) ',sabs_tree_dif(l,ipar),sabs_tree_dir(l,ipar)
-          write (6,'(A,1X,*(F10.5,1X))') 'fabd_sun_z(p,iv),fabd_sha_z(p,iv)', fabd_sun_z(p,iv),fabd_sha_z(p,iv)
-          write (6,'(A,1X,*(F10.5,1X))') 'fabi_sun_z(p,iv),fabi_sha_z(p,iv)', fabi_sun_z(p,iv),fabi_sha_z(p,iv)
-        end do
+      !   do iv = 1, nrad(p)
+      !     write (6,'(A,I5)') '-------------------(p):before parsun_z------------------- ', p
+      !     write (6,'(A,I5)') '-------------------iv---------------- ', iv
+      !     write (6,'(A,1X,*(F10.5,1X))') 'forc_solad_col(c,ipar),forc_solai(g,ipar) ', forc_solad_col(c,ipar),forc_solai(g,ipar)
+      !     write (6,'(A,1X,*(F10.5,1X))') 'sabs_tree_dif(l,ipar),sabs_tree_dir(l,ipar) ',sabs_tree_dif(l,ipar),sabs_tree_dir(l,ipar)
+      !     write (6,'(A,1X,*(F10.5,1X))') 'fabd_sun_z(p,iv),fabd_sha_z(p,iv)', fabd_sun_z(p,iv),fabd_sha_z(p,iv)
+      !     write (6,'(A,1X,*(F10.5,1X))') 'fabi_sun_z(p,iv),fabi_sha_z(p,iv)', fabi_sun_z(p,iv),fabi_sha_z(p,iv)
+      !   end do
         do iv = 1, nrad(p)
            ! The absorbed solar radiation for urban road tree is calculated in UrbanAlbedoMod
            ! Here just use the fabd_sun_z and fabd_sha_z to get the patition of sunlit and shaded leave absorption.
@@ -501,11 +501,11 @@ contains
            end if 
         end do
         
-        do iv = 1, nrad(p)
-          write (6,'(A,I5)') '-------------------(p):after parsun_z------------------- ', p
-          write (6,'(A,I5)') '-------------------iv---------------- ', iv
-          write (6,'(A,1X,*(F10.5,1X))') 'parsun_z(p,iv),parsha_z(p,iv)', parsun_z(p,iv),parsha_z(p,iv)
-        end do
+      !   do iv = 1, nrad(p)
+      !     write (6,'(A,I5)') '-------------------(p):after parsun_z------------------- ', p
+      !     write (6,'(A,I5)') '-------------------iv---------------- ', iv
+      !     write (6,'(A,1X,*(F10.5,1X))') 'parsun_z(p,iv),parsha_z(p,iv)', parsun_z(p,iv),parsha_z(p,iv)
+      !   end do
      end do ! end of fp = 1,num_nourbanwtreep loop
    end associate
    return
